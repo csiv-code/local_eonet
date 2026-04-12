@@ -18,7 +18,7 @@ class ServicioNasa {
       HttpClient clienteDart = HttpClient(context: contextoSeguro);
       IOClient clienteSeguro = IOClient(clienteDart);
 
-      final url = Uri.parse('https://eonet.gsfc.nasa.gov/api/v3/events');
+      final url = Uri.parse('https://eonet.gsfc.nasa.gov/api/v3/events?limit=50');
 
       final respuesta = await clienteSeguro.get(url);
 
