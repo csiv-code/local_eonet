@@ -19,29 +19,41 @@ class PantallaEventos extends StatefulWidget {
 class _PantallaEventosState extends State<PantallaEventos> {
   final servicio = ServicioNasa();
   String filtroActual = 'todos'; 
+  
+  List<dynamic> listaDeCategorias = []; 
+
+  @override
+  void initState() {
+    super.initState();
+    _descargarCategorias();
+  }
+
+  // Función oculta para cargar el menú
+  Future<void> _descargarCategorias() async {
+    final categoriasDescargadas = await servicio.obtenerCategorias();
+    setState(() {
+      listaDeCategorias = categoriasDescargadas;
+    });
+  }
 
   void recargarDatos() {
     setState(() {});
   }
 
-
   Widget _obtenerIcono(String categoriaId) {
     switch (categoriaId) {
-      case 'wildfires':
-        return const Icon(Icons.local_fire_department, color: Colors.red, size: 30);
-      case 'volcanoes':
-        return const Icon(Icons.terrain, color: Colors.deepOrange, size: 30);
-      case 'severeStorms':
-        return const Icon(Icons.thunderstorm, color: Colors.blueGrey, size: 30);
-      case 'earthquakes':
-        return const Icon(Icons.vibration, color: Colors.brown, size: 30);
-      case 'floods':
-        return const Icon(Icons.water, color: Colors.blue, size: 30);
+      case 'wildfires': return const Icon(Icons.local_fire_department, color: Colors.red, size: 30);
+      case 'volcanoes': return const Icon(Icons.terrain, color: Colors.deepOrange, size: 30);
+      case 'severeStorms': return const Icon(Icons.thunderstorm, color: Colors.blueGrey, size: 30);
+      case 'earthquakes': return const Icon(Icons.vibration, color: Colors.brown, size: 30);
+      case 'floods': return const Icon(Icons.water, color: Colors.blue, size: 30);
       case 'snow':
-      case 'seaLakeIce':
-        return const Icon(Icons.ac_unit, color: Colors.lightBlue, size: 30);
-      default:
-        return const Icon(Icons.warning_amber, color: Colors.orange, size: 30);
+      case 'seaLakeIce': return const Icon(Icons.ac_unit, color: Colors.lightBlue, size: 30);
+      case 'drought': return const Icon(Icons.wb_sunny, color: Colors.orangeAccent, size: 30);
+      case 'tempExtremes': return const Icon(Icons.thermostat, color: Colors.redAccent, size: 30);
+      case 'dustHaze': return const Icon(Icons.blur_on, color: Colors.grey, size: 30);
+      case 'landslides': return const Icon(Icons.landslide, color: Colors.brown, size: 30);
+      default: return const Icon(Icons.warning_amber, color: Colors.orange, size: 30);
     }
   }
 
@@ -60,14 +72,22 @@ class _PantallaEventosState extends State<PantallaEventos> {
                 filtroActual = nuevaCategoria;
               });
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'todos', child: Text('🌍 Todos los eventos')),
-              const PopupMenuItem(value: 'wildfires', child: Text('🔥 Incendios')),
-              const PopupMenuItem(value: 'volcanoes', child: Text('🌋 Volcanes')),
-              const PopupMenuItem(value: 'severeStorms', child: Text('⛈️ Tormentas')),
-              const PopupMenuItem(value: 'earthquakes', child: Text('🫨 Terremotos')),
-              const PopupMenuItem(value: 'floods', child: Text('🌊 Inundaciones')),
-            ],
+            itemBuilder: (context) {
+              List<PopupMenuEntry<String>> opciones = [
+                const PopupMenuItem(value: 'todos', child: Text('Todos los eventos')),
+              ];
+
+              // 2. Agregamos las opciones dinámicas de la NASA
+              for (var categoria in listaDeCategorias) {
+                opciones.add(
+                  PopupMenuItem(
+                    value: categoria['id'], 
+                    child: Text('• ${categoria['title']}'),
+                  ),
+                );
+              }
+              return opciones;
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -80,7 +100,6 @@ class _PantallaEventosState extends State<PantallaEventos> {
       body: FutureBuilder<List<dynamic>>(
         future: servicio.obtenerEventos(categoriaId: filtroActual),
         builder: (context, snapshot) {
-          
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } 
@@ -93,12 +112,11 @@ class _PantallaEventosState extends State<PantallaEventos> {
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
               final evento = snapshot.data![index];
-              final categoriaId = evento['categories'][0]['id']; // Extraemos el ID como 'wildfires'
+              final categoriaId = evento['categories'][0]['id'];
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 child: ListTile(
-                  // Usamos nuestra función traductora para mostrar el ícono correcto
                   leading: _obtenerIcono(categoriaId),
                   title: Text(evento['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(evento['categories'][0]['title']),
