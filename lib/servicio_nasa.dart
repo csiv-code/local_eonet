@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
 class ServicioNasa {
-  Future<List<dynamic>> obtenerEventos({String categoriaId = 'todos'}) async {
+  Future<List<dynamic>> obtenerEventos({String categoriaId = 'todos', String bbox = 'todos'}) async {
     try {
       final byteData = await rootBundle.load('assets/certificadoNASA.crt');
       final bytesCertificado = byteData.buffer.asUint8List();
@@ -16,8 +16,13 @@ class ServicioNasa {
       IOClient clienteSeguro = IOClient(clienteDart);
 
       String urlTexto = 'https://eonet.gsfc.nasa.gov/api/v3/events?limit=30';
+    
       if (categoriaId != 'todos') {
         urlTexto += '&category=$categoriaId';
+      }
+      
+      if (bbox != 'todos') {
+        urlTexto += '&bbox=$bbox';
       }
 
       final url = Uri.parse(urlTexto);

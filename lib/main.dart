@@ -18,8 +18,10 @@ class PantallaEventos extends StatefulWidget {
 
 class _PantallaEventosState extends State<PantallaEventos> {
   final servicio = ServicioNasa();
-  String filtroActual = 'todos'; 
   
+  String filtroCategoria = 'todos'; 
+  String filtroContinente = 'todos'; 
+
   List<dynamic> listaDeCategorias = []; 
 
   @override
@@ -28,7 +30,6 @@ class _PantallaEventosState extends State<PantallaEventos> {
     _descargarCategorias();
   }
 
-  // Función oculta para cargar el menú
   Future<void> _descargarCategorias() async {
     final categoriasDescargadas = await servicio.obtenerCategorias();
     setState(() {
@@ -65,19 +66,36 @@ class _PantallaEventosState extends State<PantallaEventos> {
         backgroundColor: Colors.deepPurple[100],
         actions: [
           PopupMenuButton<String>(
+            icon: const Icon(Icons.public), 
+            tooltip: 'Filtrar por Continente',
+            onSelected: (String nuevoContinente) {
+              setState(() {
+                filtroContinente = nuevoContinente;
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'todos', child: Text('Todo el mundo')),
+              const PopupMenuItem(value: '-168,15,-52,72', child: Text('América del Norte')),
+              const PopupMenuItem(value: '-82,-56,-34,13', child: Text('América del Sur')),
+              const PopupMenuItem(value: '-10,35,40,71', child: Text('Europa')),
+              const PopupMenuItem(value: '-18,-35,52,38', child: Text('África')),
+              const PopupMenuItem(value: '40,5,180,75', child: Text('Asia')),
+              const PopupMenuItem(value: '110,-47,180,-10', child: Text('Oceanía')),
+            ],
+          ),
+
+          PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
             tooltip: 'Filtrar eventos',
             onSelected: (String nuevaCategoria) {
               setState(() {
-                filtroActual = nuevaCategoria;
+                filtroCategoria = nuevaCategoria;
               });
             },
             itemBuilder: (context) {
               List<PopupMenuEntry<String>> opciones = [
-                const PopupMenuItem(value: 'todos', child: Text('Todos los eventos')),
+                const PopupMenuItem(value: 'todos', child: Text('Todas las categorías')),
               ];
-
-              // 2. Agregamos las opciones dinámicas de la NASA
               for (var categoria in listaDeCategorias) {
                 opciones.add(
                   PopupMenuItem(
@@ -89,6 +107,7 @@ class _PantallaEventosState extends State<PantallaEventos> {
               return opciones;
             },
           ),
+          
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: recargarDatos,
@@ -98,14 +117,17 @@ class _PantallaEventosState extends State<PantallaEventos> {
       ),
       
       body: FutureBuilder<List<dynamic>>(
-        future: servicio.obtenerEventos(categoriaId: filtroActual),
+        future: servicio.obtenerEventos(
+          categoriaId: filtroCategoria, 
+          bbox: filtroContinente
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } 
           
           if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No hay eventos activos para esta categoría.'));
+            return const Center(child: Text('No hay eventos para estos filtros.'));
           }
 
           return ListView.builder(
