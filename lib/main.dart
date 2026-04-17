@@ -9,7 +9,6 @@ void main() {
   ));
 }
 
-// 1. Volvemos a StatefulWidget para poder "refrescar" la pantalla
 class PantallaEventos extends StatefulWidget {
   const PantallaEventos({super.key});
 
@@ -19,21 +18,67 @@ class PantallaEventos extends StatefulWidget {
 
 class _PantallaEventosState extends State<PantallaEventos> {
   final servicio = ServicioNasa();
+  String filtroActual = 'todos'; 
 
-  // 2. Esta función es la magia del botón. 
-  // setState le dice a Flutter: "Vuelve a dibujar toda la pantalla"
   void recargarDatos() {
     setState(() {});
+  }
+
+
+  Widget _obtenerIcono(String categoriaId) {
+    switch (categoriaId) {
+      case 'wildfires':
+        return const Icon(Icons.local_fire_department, color: Colors.red, size: 30);
+      case 'volcanoes':
+        return const Icon(Icons.terrain, color: Colors.deepOrange, size: 30);
+      case 'severeStorms':
+        return const Icon(Icons.thunderstorm, color: Colors.blueGrey, size: 30);
+      case 'earthquakes':
+        return const Icon(Icons.vibration, color: Colors.brown, size: 30);
+      case 'floods':
+        return const Icon(Icons.water, color: Colors.blue, size: 30);
+      case 'snow':
+      case 'seaLakeIce':
+        return const Icon(Icons.ac_unit, color: Colors.lightBlue, size: 30);
+      default:
+        return const Icon(Icons.warning_amber, color: Colors.orange, size: 30);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Monitor EONET - NASA')),
+      appBar: AppBar(
+        title: const Text('Monitor NASA'),
+        backgroundColor: Colors.deepPurple[100],
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filtrar eventos',
+            onSelected: (String nuevaCategoria) {
+              setState(() {
+                filtroActual = nuevaCategoria;
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'todos', child: Text('🌍 Todos los eventos')),
+              const PopupMenuItem(value: 'wildfires', child: Text('🔥 Incendios')),
+              const PopupMenuItem(value: 'volcanoes', child: Text('🌋 Volcanes')),
+              const PopupMenuItem(value: 'severeStorms', child: Text('⛈️ Tormentas')),
+              const PopupMenuItem(value: 'earthquakes', child: Text('🫨 Terremotos')),
+              const PopupMenuItem(value: 'floods', child: Text('🌊 Inundaciones')),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: recargarDatos,
+            tooltip: 'Recargar lista',
+          ),
+        ],
+      ),
       
       body: FutureBuilder<List<dynamic>>(
-        // Al redibujarse la pantalla, esto vuelve a llamar a la NASA
-        future: servicio.obtenerEventos(),
+        future: servicio.obtenerEventos(categoriaId: filtroActual),
         builder: (context, snapshot) {
           
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -41,28 +86,27 @@ class _PantallaEventosState extends State<PantallaEventos> {
           } 
           
           if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No hay eventos o ocurrió un error.'));
+            return const Center(child: Text('No hay eventos activos para esta categoría.'));
           }
 
           return ListView.builder(
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
               final evento = snapshot.data![index];
-              return ListTile(
-                leading: const Icon(Icons.warning_amber, color: Colors.orange),
-                title: Text(evento['title']),
-                subtitle: Text(evento['categories'][0]['title']),
+              final categoriaId = evento['categories'][0]['id']; // Extraemos el ID como 'wildfires'
+
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: ListTile(
+                  // Usamos nuestra función traductora para mostrar el ícono correcto
+                  leading: _obtenerIcono(categoriaId),
+                  title: Text(evento['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(evento['categories'][0]['title']),
+                ),
               );
             },
           );
         },
-      ),
-
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: recargarDatos,
-        backgroundColor: Colors.deepPurple[100],
-        child: const Icon(Icons.refresh),
       ),
     );
   }
