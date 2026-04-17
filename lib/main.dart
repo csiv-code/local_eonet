@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'servicio_nasa.dart';
 
 void main() {
@@ -39,6 +40,48 @@ class _PantallaEventosState extends State<PantallaEventos> {
 
   void recargarDatos() {
     setState(() {});
+  }
+
+  // FUNCIÓN CORREGIDA: Leer el archivo desde la raíz
+  Future<void> _mostrarReadme(BuildContext context) async {
+    try {
+      // Leemos el texto del archivo directamente desde la raíz
+      final String textoReadme = await rootBundle.loadString('README.md');
+      
+      // Verificamos que la pantalla siga activa
+      if (!context.mounted) return;
+      
+      // Mostramos la ventana emergente
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.deepPurple),
+                SizedBox(width: 10),
+                Text('Read Me'),
+              ],
+            ),
+            // SingleChildScrollView permite hacer scroll si el texto es muy largo
+            content: SingleChildScrollView(
+              child: Text(textoReadme),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('CERRAR'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No se encontró el archivo README.md en la raíz')),
+      );
+    }
   }
 
   Widget _obtenerIcono(String categoriaId) {
@@ -112,6 +155,13 @@ class _PantallaEventosState extends State<PantallaEventos> {
             icon: const Icon(Icons.refresh),
             onPressed: recargarDatos,
             tooltip: 'Recargar lista',
+          ),
+
+          // BOTÓN: Ícono de información para el Read Me
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => _mostrarReadme(context),
+            tooltip: 'Leer Read Me',
           ),
         ],
       ),
