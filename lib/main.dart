@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart'; 
 import 'servicio_nasa.dart';
 
 void main() {
@@ -100,7 +102,7 @@ class _PantallaEventosState extends State<PantallaEventos> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-title: Row( 
+        title: Row(
           children: [
             Image.asset('assets/nasa_logo.png', width: 40, height: 40), 
             const SizedBox(width: 10),
@@ -130,7 +132,6 @@ title: Row(
               decoration: BoxDecoration(color: Colors.black),
               child: Text('Opciones', style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
-            
             ExpansionTile(
               title: const Text('Categoría', style: TextStyle(fontWeight: FontWeight.bold)),
               children: [
@@ -147,7 +148,6 @@ title: Row(
               ],
             ),
             const Divider(color: Colors.black54),
-
             ExpansionTile(
               title: const Text('Continente', style: TextStyle(fontWeight: FontWeight.bold)),
               children: [
@@ -161,7 +161,6 @@ title: Row(
               ],
             ),
             const Divider(color: Colors.black54),
-
             ListTile(
               title: const Text('Refrescar', style: TextStyle(fontWeight: FontWeight.bold)),
               onTap: () {
@@ -170,7 +169,6 @@ title: Row(
               },
             ),
             const Divider(color: Colors.black54),
-
             ListTile(
               title: const Text('Read Me', style: TextStyle(fontWeight: FontWeight.bold)),
               onTap: () {
@@ -195,25 +193,57 @@ title: Row(
           ),
           
           Expanded(
-            child: Row(
-              children: [
-                Container(
-                  width: 250, 
-                  color: Colors.grey[350], 
-                  child: FutureBuilder<List<dynamic>>(
-                    future: servicio.obtenerEventos(categoriaId: filtroCategoria, bbox: filtroContinente),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      } 
-                      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(child: Text('No hay eventos.'));
-                      }
 
-                      return ListView.builder(
-                        itemCount: snapshot.data!.length,
+            child: FutureBuilder<List<dynamic>>(
+              future: servicio.obtenerEventos(categoriaId: filtroCategoria, bbox: filtroContinente),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } 
+                if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No hay eventos.'));
+                }
+
+                final eventos = snapshot.data!;
+                
+                List<Marker> marcadoresEnElMapa = [];
+                for (var evento in eventos) {
+                  final categoriaId = evento['categories'][0]['id'];
+                  
+                  if (evento['geometry'] != null && evento['geometry'].isNotEmpty) {
+                    var coords = evento['geometry'][0]['coordinates'];
+                    double lat = 0.0, lng = 0.0;
+                    
+                    if (coords is List && coords.length >= 2) {
+                      if (coords[0] is List) { 
+                        lng = coords[0][0].toDouble();
+                        lat = coords[0][1].toDouble();
+                      } else { 
+                        lng = coords[0].toDouble();
+                        lat = coords[1].toDouble();
+                      }
+                      
+                      marcadoresEnElMapa.add(
+                        Marker(
+                          point: LatLng(lat, lng), 
+                          width: 40,
+                          height: 40,
+                          child: _obtenerIcono(categoriaId), 
+                        ),
+                      );
+                    }
+                  }
+                }
+
+                return Row(
+                  children: [
+                    Container(
+                      width: 250, 
+                      color: Colors.grey[350], 
+                      child: ListView.builder(
+                        itemCount: eventos.length,
                         itemBuilder: (context, index) {
-                          final evento = snapshot.data![index];
+                          final evento = eventos[index];
                           final categoriaId = evento['categories'][0]['id'];
 
                           return Container(
@@ -224,7 +254,7 @@ title: Row(
                               ),
                             ),
                             child: ListTile(
-                              leading: _obtenerIcono(categoriaId),
+                              leading: _obtenerIcono(categoriaId), 
                               title: Text(
                                 evento['title'], 
                                 style: const TextStyle(fontSize: 12),
@@ -234,23 +264,29 @@ title: Row(
                             ),
                           );
                         },
-                      );
-                    },
-                  ),
-                ),
-
-                Expanded(
-                  child: Container(
-                    color: const Color(0xFF000080), 
-                    child: const Center(
-                      child: Text(
-                        '🗺️ ZONA DEL MAPA', 
-                        style: TextStyle(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.bold)
                       ),
                     ),
-                  ),
-                ),
-              ],
+
+                    Expanded(
+                      child: FlutterMap(
+                        options: const MapOptions(
+                          initialCenter: LatLng(20.0, 0.0), 
+                          initialZoom: 2.0, 
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.tuapp.eonet',
+                          ),
+                          MarkerLayer(
+                            markers: marcadoresEnElMapa, 
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
