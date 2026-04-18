@@ -1,7 +1,7 @@
 name: weatherv1
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.2.2
+version: 0.3.0
 
 environment:
   sdk: ^3.11.4
@@ -21,3 +21,4 @@ flutter:
   assets:
     - assets/certificadoNASA.crt
     - README.md
+    - assets/nasa_logo.png
