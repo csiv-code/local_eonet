@@ -20,7 +20,7 @@ En la esquina superior derecha de la barra negra encontrarás el menú principal
 
 ---
 
-## 🛠️ Notas Técnicas y Requisitos
+## Notas Técnicas y Requisitos
 
 * **Conexión a Internet:** La aplicación requiere una conexión activa a la red. Esto es necesario tanto para comunicarse con los servidores de la NASA, como para descargar las imágenes del mapa.
 * **Origen de los Datos:** Todos los marcadores mostrados provienen de la iniciativa *Earth Observatory* de la NASA. La velocidad y frecuencia con la que aparecen nuevos eventos dependen enteramente de los reportes satelitales oficiales.
